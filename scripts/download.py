@@ -44,7 +44,9 @@ def main() -> int:
     is_youtube = parsed.hostname == "youtu.be" or parsed.hostname.endswith(".youtube.com")
     attempts = [
         ("clientes padrão do YouTube", ["--no-plugin-dirs"]),
-        ("mweb com PO Token", ["--extractor-args", "youtube:player_client=mweb"]),
+        ("mweb com PO Token", [
+            "--extractor-args", "youtube:player_client=mweb;fetch_pot=always;pot_trace=true",
+        ]),
     ] if is_youtube else [("extrator padrão", [])]
 
     result = None
