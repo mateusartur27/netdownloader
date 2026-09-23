@@ -1,0 +1,10 @@
+{
+  "name": "netdownloader",
+  "main": "src/worker.js",
+  "compatibility_date": "2026-09-22",
+  "vars": {
+    "GITHUB_OWNER": "mateusartur27",
+    "GITHUB_REPO": "netdownloader",
+    "GITHUB_REF": "main"
+  }
+}
