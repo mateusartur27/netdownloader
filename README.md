@@ -42,7 +42,7 @@ O GitHub mantém o vídeo em ZIP e os resultados de busca por 1 dia para reduzir
 
 ## Evitar bloqueios dos runners públicos
 
-Os runners públicos do GitHub usam IPs dinâmicos e compartilhados. O projeto serializa todas as pesquisas e downloads em uma única fila, aguarda entre requisições e repete falhas transitórias. Em cada download, o workflow também instala o plugin `bgutil-ytdlp-pot-provider` e inicia a versão 2.0.0 do provedor em Docker vinculada apenas a `127.0.0.1`. Para o YouTube, o downloader tenta primeiro os clientes padrão atuais; se eles falharem, tenta o cliente `mweb` com um token criado automaticamente para aquele vídeo. Nenhuma das opções exige chave, conta ou serviço pago.
+Os runners públicos do GitHub usam IPs dinâmicos e compartilhados. O projeto serializa todas as pesquisas e downloads em uma única fila, aguarda entre requisições e repete falhas transitórias. Em cada download, o workflow instala o plugin `yt-dlp-getpot-wpc` 1.1.2 e usa o Chrome do runner dentro do Xvfb para gerar PO Tokens. Para o YouTube, o downloader tenta primeiro os clientes padrão atuais; se eles falharem, tenta o cliente `mweb` com tokens de player e mídia criados automaticamente para aquele vídeo. Nenhuma das opções exige chave, conta ou serviço pago.
 
 O PO Token ajuda nos desafios de origem e nos erros `403` do YouTube. Ele não altera o IP do runner e, portanto, não elimina um bloqueio ou limite `429` aplicado ao endereço compartilhado. Nesses casos, aguarde antes de tentar novamente; muitas tentativas consecutivas podem prolongar o limite.
 
@@ -50,7 +50,7 @@ Para uso frequente, configure um **self-hosted runner** em um computador própri
 
 1. No repositório, abra **Settings > Actions > Runners > New self-hosted runner** e siga os comandos do GitHub.
 2. Adicione ao runner o rótulo personalizado `netdownloader`.
-3. Instale Python 3.12+, Node 22+, ffmpeg, Docker e curl nessa máquina e confirme que estão disponíveis para o usuário do runner.
+3. Instale Python 3.12+, Node 22+, ffmpeg, Chrome ou Chromium e Xvfb nessa máquina e confirme que estão disponíveis para o usuário do runner.
 4. Em **Settings > Secrets and variables > Actions > Variables**, crie `YTDLP_RUNNER` com o valor `netdownloader`.
 5. Restrinja o repositório: mantenha-o privado, não habilite workflows vindos de forks e não adicione gatilhos `pull_request` aos workflows que usam o runner próprio.
 

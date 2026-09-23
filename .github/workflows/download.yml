@@ -31,28 +31,25 @@ jobs:
       - name: Instalar yt-dlp e ffmpeg
         if: runner.environment == 'github-hosted'
         run: |
-          python -m pip install --upgrade 'yt-dlp[default]' 'bgutil-ytdlp-pot-provider==2.0.0'
+          python -m pip install --upgrade 'yt-dlp[default]' 'yt-dlp-getpot-wpc==1.1.2'
           sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg
+          sudo apt-get install -y ffmpeg xvfb
       - name: Atualizar yt-dlp no runner próprio
         if: runner.environment == 'self-hosted'
-        run: python -m pip install --upgrade 'yt-dlp[default]' 'bgutil-ytdlp-pot-provider==2.0.0'
-      - name: Iniciar provedor automático de PO Token
+        run: python -m pip install --upgrade 'yt-dlp[default]' 'yt-dlp-getpot-wpc==1.1.2'
+      - name: Localizar navegador para o PO Token
         run: |
-          docker run --name bgutil-provider --detach --init \
-            --publish 127.0.0.1:4416:4416 \
-            brainicism/bgutil-ytdlp-pot-provider:2.0.0
-          if ! curl --fail --silent --show-error \
-            --retry 20 --retry-all-errors --retry-delay 1 \
-            http://127.0.0.1:4416/ping; then
-            docker logs bgutil-provider
+          browser_path="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          if [ -z "$browser_path" ]; then
+            echo "Chrome ou Chromium não foi encontrado no runner."
             exit 1
           fi
+          echo "YTDLP_BROWSER_PATH=$browser_path" >> "$GITHUB_ENV"
       - name: Baixar um vídeo
         env:
           VIDEO_URL: ${{ inputs.url }}
           YT_DLP_PROXY: ${{ secrets.YT_DLP_PROXY }}
-        run: python scripts/download.py
+        run: xvfb-run --auto-servernum python scripts/download.py
       - name: Disponibilizar arquivo
         uses: actions/upload-artifact@v4
         with:

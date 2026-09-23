@@ -42,12 +42,14 @@ def main() -> int:
         base_command[3:3] = ["--proxy", proxy]
 
     is_youtube = parsed.hostname == "youtu.be" or parsed.hostname.endswith(".youtube.com")
-    attempts = [
-        ("clientes padrão do YouTube", ["--no-plugin-dirs"]),
-        ("mweb com PO Token", [
+    attempts = [("clientes padrão do YouTube", ["--no-plugin-dirs"])] \
+        if is_youtube else [("extrator padrão", [])]
+    browser_path = os.environ.get("YTDLP_BROWSER_PATH", "").strip()
+    if is_youtube and browser_path:
+        attempts.append(("mweb com PO Token pelo Chromium", [
             "--extractor-args", "youtube:player_client=mweb;fetch_pot=always;pot_trace=true",
-        ]),
-    ] if is_youtube else [("extrator padrão", [])]
+            "--extractor-args", f"youtubepot-wpc:browser_path={browser_path}",
+        ]))
 
     result = None
     for number, (label, extra_args) in enumerate(attempts, start=1):
