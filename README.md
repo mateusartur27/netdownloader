@@ -46,6 +46,8 @@ Os runners públicos do GitHub usam IPs dinâmicos e compartilhados. O projeto s
 
 O PO Token ajuda nos desafios de origem e nos erros `403` do YouTube. Ele não altera o IP do runner e, portanto, não elimina um bloqueio ou limite `429` aplicado ao endereço compartilhado. Nesses casos, aguarde antes de tentar novamente; muitas tentativas consecutivas podem prolongar o limite.
 
+Em um teste real realizado em 23 de setembro de 2026, runners públicos retornaram `429` e `LOGIN_REQUIRED` antes do acesso à mídia. O WPC iniciou o Chromium e gerou tokens de player corretamente, mas o YouTube ainda recusou o IP. Portanto, o modo gratuito em `ubuntu-latest` funciona apenas quando o endereço atribuído pelo GitHub é aceito naquele momento; não há garantia de disponibilidade para o YouTube.
+
 Para uso frequente, configure um **self-hosted runner** em um computador próprio ou servidor com IP estável:
 
 1. No repositório, abra **Settings > Actions > Runners > New self-hosted runner** e siga os comandos do GitHub.
