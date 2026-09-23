@@ -21,7 +21,7 @@ def main() -> int:
 
     output = Path(args.output_dir)
     output.mkdir(parents=True, exist_ok=True)
-    command = [
+    base_command = [
         sys.executable, "-m", "yt_dlp",
         "--no-playlist",
         "--playlist-items", "1",
@@ -32,20 +32,32 @@ def main() -> int:
         "--retries", "5",
         "--fragment-retries", "5",
         "--js-runtimes", "node",
-        "--extractor-args", "youtube:player_client=mweb",
         "--format", "bv*[height<=1080]+ba/b[height<=1080]/best",
         "--merge-output-format", "mp4",
         "--restrict-filenames",
         "--output", str(output / "%(title).120B-%(id)s.%(ext)s"),
-        url,
     ]
     proxy = os.environ.get("YT_DLP_PROXY", "").strip()
     if proxy:
-        command[3:3] = ["--proxy", proxy]
-    print("Executando yt-dlp para:", parsed.hostname, flush=True)
-    result = subprocess.run(command, check=False)
-    if result.returncode:
-        return result.returncode
+        base_command[3:3] = ["--proxy", proxy]
+
+    is_youtube = parsed.hostname == "youtu.be" or parsed.hostname.endswith(".youtube.com")
+    attempts = [
+        ("clientes padrão do YouTube", ["--no-plugin-dirs"]),
+        ("mweb com PO Token", ["--extractor-args", "youtube:player_client=mweb"]),
+    ] if is_youtube else [("extrator padrão", [])]
+
+    result = None
+    for number, (label, extra_args) in enumerate(attempts, start=1):
+        print(f"Tentativa {number}/{len(attempts)}: {label}", flush=True)
+        result = subprocess.run(base_command + extra_args + [url], check=False)
+        if result.returncode == 0:
+            break
+        for pattern in ("*.part", "*.ytdl"):
+            for temporary_file in output.glob(pattern):
+                temporary_file.unlink(missing_ok=True)
+    if result is None or result.returncode:
+        return result.returncode if result else 1
     files = [file for file in output.iterdir() if file.is_file()]
     if not files:
         print("Nenhum arquivo foi produzido.", file=sys.stderr)
