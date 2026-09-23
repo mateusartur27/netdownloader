@@ -16,9 +16,13 @@ def main() -> None:
     source = plugin_path.read_text(encoding="utf-8")
     if "__version__ = '1.1.2'" not in source:
         raise RuntimeError("Versão inesperada do yt-dlp-getpot-wpc; patch recusado.")
-    original = """            browser_args=browser_args
+    original = """            headless=False,
+            browser_executable_path=browser_executable_path,
+            browser_args=browser_args
         )"""
-    replacement = """            browser_args=browser_args,
+    replacement = """            headless=True,
+            browser_executable_path=browser_executable_path,
+            browser_args=browser_args,
             sandbox=False,
         )"""
     if original not in source:
