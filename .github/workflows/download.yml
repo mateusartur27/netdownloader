@@ -42,9 +42,12 @@ jobs:
           docker run --name bgutil-provider --detach --init \
             --publish 127.0.0.1:4416:4416 \
             brainicism/bgutil-ytdlp-pot-provider:2.0.0
-          curl --fail --silent --show-error \
-            --retry 20 --retry-connrefused --retry-delay 1 \
-            http://127.0.0.1:4416/ping
+          if ! curl --fail --silent --show-error \
+            --retry 20 --retry-all-errors --retry-delay 1 \
+            http://127.0.0.1:4416/ping; then
+            docker logs bgutil-provider
+            exit 1
+          fi
       - name: Baixar um vídeo
         env:
           VIDEO_URL: ${{ inputs.url }}
