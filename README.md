@@ -82,6 +82,12 @@ Como alternativa gratuita com um IP menos compartilhado, é possível registrar 
 
 ## Testes
 
+Na branch `codex/youtube-bgutils`, o workflow também instala o BgUtils 2.0.2 e compila seu gerador de PO Tokens com Node. A sequência é: clientes padrão, `mweb` com BgUtils e `mweb` com Chromium. O download só é aceito se o `ffprobe` encontrar duração positiva e uma faixa de vídeo; o limite de 1080p também se aplica ao formato alternativo.
+
+Em 8 de outubro de 2026, a execução [37807162916](https://github.com/mateusartur27/netdownloader/actions/runs/37807162916) gerou um PO Token de player pelo BgUtils, mas o YouTube respondeu novamente “Sign in to confirm you’re not a bot” para `waETo-ZWCRw`. Não foi produzido um artifact. A alternativa Chromium falhou ao iniciar nesse runner. Portanto, a integração do BgUtils está testada, mas não resolveu a restrição de acesso nesse teste.
+
+`python -m unittest discover -s scripts -p test_download.py` verifica a alternativa para `youtube.com` sem subdomínio e a rejeição de downloads sem arquivo ou sem faixa de vídeo.
+
 `npm test` verifica autenticação, validação de URLs e integração da API com respostas simuladas da Brave e do GitHub.
 
 Para repetir os sete downloads reais do teste de aceitação, use `python scripts/smoke_search.py` para revisar candidatos e `python scripts/smoke_download.py` para baixar e validar os MP4 com `ffprobe`. Os arquivos e relatórios ficam em `downloads/`, fora do Git.
