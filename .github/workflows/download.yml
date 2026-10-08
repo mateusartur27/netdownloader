@@ -31,12 +31,21 @@ jobs:
       - name: Instalar yt-dlp e ffmpeg
         if: runner.environment == 'github-hosted'
         run: |
-          python -m pip install --upgrade 'yt-dlp[default]' 'yt-dlp-getpot-wpc==1.1.2'
+          python -m pip install --upgrade 'yt-dlp[default]' 'yt-dlp-getpot-wpc==1.1.2' 'bgutil-ytdlp-pot-provider==2.0.2'
           sudo apt-get update -qq
           sudo apt-get install -y ffmpeg xvfb
       - name: Atualizar yt-dlp no runner próprio
         if: runner.environment == 'self-hosted'
-        run: python -m pip install --upgrade 'yt-dlp[default]' 'yt-dlp-getpot-wpc==1.1.2'
+        run: python -m pip install --upgrade 'yt-dlp[default]' 'yt-dlp-getpot-wpc==1.1.2' 'bgutil-ytdlp-pot-provider==2.0.2'
+      - name: Preparar BgUtils PO Token
+        shell: bash
+        run: |
+          provider_dir="$(mktemp -d "$RUNNER_TEMP/bgutil.XXXXXX")"
+          git clone --depth 1 --branch 2.0.2 https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git "$provider_dir"
+          cd "$provider_dir/server"
+          npm ci
+          npx tsc
+          echo "YTDLP_BGUTIL_HOME=$provider_dir/server" >> "$GITHUB_ENV"
       - name: Preparar provedor de PO Token no runner público
         if: runner.environment == 'github-hosted'
         run: python scripts/prepare_wpc.py

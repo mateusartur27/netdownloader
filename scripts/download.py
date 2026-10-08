@@ -1,6 +1,7 @@
 """Download one public video for the GitHub Actions artifact."""
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -23,6 +24,7 @@ def main() -> int:
     output.mkdir(parents=True, exist_ok=True)
     base_command = [
         sys.executable, "-m", "yt_dlp",
+        "--ignore-config",
         "--no-playlist",
         "--playlist-items", "1",
         "--max-filesize", "400M",
@@ -32,7 +34,7 @@ def main() -> int:
         "--retries", "5",
         "--fragment-retries", "5",
         "--js-runtimes", "node",
-        "--format", "bv*[height<=1080]+ba/b[height<=1080]/best",
+        "--format", "bv*[height<=1080]+ba/b[height<=1080]",
         "--merge-output-format", "mp4",
         "--restrict-filenames",
         "--output", str(output / "%(title).120B-%(id)s.%(ext)s"),
@@ -41,10 +43,17 @@ def main() -> int:
     if proxy:
         base_command[3:3] = ["--proxy", proxy]
 
-    is_youtube = parsed.hostname == "youtu.be" or parsed.hostname.endswith(".youtube.com")
+    hostname = parsed.hostname.rstrip(".").lower()
+    is_youtube = hostname in ("youtu.be", "youtube.com") or hostname.endswith(".youtube.com")
     attempts = [("clientes padrão do YouTube", ["--no-plugin-dirs"])] \
         if is_youtube else [("extrator padrão", [])]
     browser_path = os.environ.get("YTDLP_BROWSER_PATH", "").strip()
+    provider_home = os.environ.get("YTDLP_BGUTIL_HOME", "").strip()
+    if is_youtube and provider_home:
+        attempts.append(("mweb com PO Token pelo BgUtils", [
+            "--extractor-args", "youtube:player_client=mweb;fetch_pot=always",
+            "--extractor-args", f"youtubepot-bgutilscript:server_home={provider_home}",
+        ]))
     if is_youtube and browser_path:
         attempts.append(("mweb com PO Token pelo Chromium", [
             "--extractor-args", "youtube:player_client=mweb;fetch_pot=always;pot_trace=true",
@@ -62,9 +71,23 @@ def main() -> int:
                 temporary_file.unlink(missing_ok=True)
     if result is None or result.returncode:
         return result.returncode if result else 1
-    files = [file for file in output.iterdir() if file.is_file()]
-    if not files:
-        print("Nenhum arquivo foi produzido.", file=sys.stderr)
+    files = [file for file in output.iterdir() if file.is_file()
+             and file.suffix not in (".part", ".ytdl")]
+    if len(files) != 1:
+        print("O download precisa produzir exatamente um arquivo de vídeo.", file=sys.stderr)
+        return 1
+    probe = subprocess.run([
+        "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=codec_type",
+        "-of", "json", str(files[0]),
+    ], capture_output=True, text=True, check=False)
+    try:
+        details = json.loads(probe.stdout)
+        valid = probe.returncode == 0 and float(details.get("format", {}).get("duration", 0)) > 0 \
+            and any(stream.get("codec_type") == "video" for stream in details.get("streams", []))
+    except (ValueError, TypeError):
+        valid = False
+    if not valid:
+        print("O arquivo produzido não é um vídeo válido.", file=sys.stderr)
         return 1
     if sum(file.stat().st_size for file in files) > 450_000_000:
         print("O arquivo final excede o limite de 450 MB.", file=sys.stderr)
