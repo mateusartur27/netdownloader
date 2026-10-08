@@ -88,6 +88,8 @@ Em 8 de outubro de 2026, a execução [37807162916](https://github.com/mateusart
 
 `python -m unittest discover -s scripts -p test_download.py` verifica a alternativa para `youtube.com` sem subdomínio e a rejeição de downloads sem arquivo ou sem faixa de vídeo.
 
+O segundo vídeo do YouTube (`jNQXAC9IVRw`, execução [37807388932](https://github.com/mateusartur27/netdownloader/actions/runs/37807388932)) apresentou a mesma exigência de login. O MP4 direto `https://www.w3schools.com/html/mov_bbb.mp4` foi baixado, validado e publicado como artifact na execução [37807903601](https://github.com/mateusartur27/netdownloader/actions/runs/37807903601). Esse controle revelou e permitiu corrigir a recusa de formatos sem resolução anunciada: eles agora podem ser baixados, e o `ffprobe` verifica o limite de 1080p após o download. Os quatro testes Python incluem a aceitação de 720p e a rejeição de 2160p.
+
 `npm test` verifica autenticação, validação de URLs e integração da API com respostas simuladas da Brave e do GitHub.
 
 Para repetir os sete downloads reais do teste de aceitação, use `python scripts/smoke_search.py` para revisar candidatos e `python scripts/smoke_download.py` para baixar e validar os MP4 com `ffprobe`. Os arquivos e relatórios ficam em `downloads/`, fora do Git.
