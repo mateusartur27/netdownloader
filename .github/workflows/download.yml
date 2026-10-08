@@ -12,6 +12,10 @@ on:
         description: Comparar motores de download (diagnóstico)
         type: boolean
         default: false
+      render_check:
+        description: Validar container do teste Render
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -22,6 +26,7 @@ concurrency:
 
 jobs:
   download:
+    if: ${{ !inputs.render_check }}
     runs-on: ${{ vars.YTDLP_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 30
     steps:
@@ -111,3 +116,19 @@ jobs:
           path: downloads/comparison/
           if-no-files-found: error
           retention-days: 1
+  render-check:
+    if: inputs.render_check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s deploy/render -p test_server.py
+      - name: Construir e verificar container
+        run: |
+          docker build -f deploy/render/Dockerfile -t netdownloader-probe .
+          docker run --rm netdownloader-probe deno --version
+          docker run --rm netdownloader-probe python -m yt_dlp --version
+          docker run --rm netdownloader-probe ffprobe -version

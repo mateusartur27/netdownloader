@@ -1,0 +1,6 @@
+.git
+node_modules
+downloads
+.dev.vars
+.wrangler
+**/__pycache__
