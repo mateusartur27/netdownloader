@@ -68,8 +68,10 @@ def main():
             message = log.read_text(encoding="utf-8", errors="replace")
             reason = "ok" if valid else "download_failed"
             if not valid:
-                if "confirm" in message.lower() and "bot" in message.lower():
+                if "botdetection" in message.lower() or ("confirm" in message.lower() and "bot" in message.lower()):
                     reason = "bot_check"
+                elif "VideoUnavailableException" in message:
+                    reason = "video_unavailable"
                 elif "429" in message:
                     reason = "rate_limited"
                 elif code == 124:
