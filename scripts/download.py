@@ -34,7 +34,7 @@ def main() -> int:
         "--retries", "5",
         "--fragment-retries", "5",
         "--js-runtimes", "node",
-        "--format", "bv*[height<=1080]+ba/b[height<=1080]",
+        "--format", "bv*[height<=?1080]+ba/b[height<=?1080]",
         "--merge-output-format", "mp4",
         "--restrict-filenames",
         "--output", str(output / "%(title).120B-%(id)s.%(ext)s"),
