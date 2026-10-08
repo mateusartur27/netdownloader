@@ -29,5 +29,9 @@ Referências: [Plano gratuito](https://render.com/docs/free) e
 Estado: implementação preparada; publicação no Render e download a partir dele
 ainda não foram realizados. A aceitação do IP pelo YouTube não é garantida.
 
+Validação em 8 de outubro de 2026: os três testes HTTP passaram e o container foi
+construído no GitHub Actions, com Deno, yt-dlp e ffprobe executados com sucesso.
+[Execução 37829603016](https://github.com/mateusartur27/netdownloader/actions/runs/37829603016).
+
 Teste local da autenticação, URLs e diagnóstico:
 `python -m unittest discover -s deploy/render -p test_server.py`
