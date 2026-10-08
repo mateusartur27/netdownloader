@@ -77,7 +77,7 @@ def main() -> int:
         print("O download precisa produzir exatamente um arquivo de vídeo.", file=sys.stderr)
         return 1
     probe = subprocess.run([
-        "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=codec_type",
+        "ffprobe", "-v", "error", "-show_entries", "format=duration:stream=codec_type,height",
         "-of", "json", str(files[0]),
     ], capture_output=True, text=True, check=False)
     try:
@@ -88,6 +88,9 @@ def main() -> int:
         valid = False
     if not valid:
         print("O arquivo produzido não é um vídeo válido.", file=sys.stderr)
+        return 1
+    if any(int(stream.get("height", 0)) > 1080 for stream in details.get("streams", [])):
+        print("O vídeo produzido excede o limite de 1080p.", file=sys.stderr)
         return 1
     if sum(file.stat().st_size for file in files) > 450_000_000:
         print("O arquivo final excede o limite de 450 MB.", file=sys.stderr)

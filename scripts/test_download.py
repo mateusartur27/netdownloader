@@ -41,6 +41,19 @@ class DownloadTests(unittest.TestCase):
                 ]):
                     self.assertEqual(download.main(), 1)
 
+    def test_probed_resolution_controls_acceptance(self):
+        for height, expected in ((720, 0), (2160, 1)):
+            with self.subTest(height=height), tempfile.TemporaryDirectory() as directory:
+                Path(directory, "video.mp4").write_bytes(b"video")
+                with patch.object(sys, "argv", ["download.py", "https://example.com/video",
+                                                "--output-dir", directory]):
+                    with patch.object(download.subprocess, "run", side_effect=[
+                        subprocess.CompletedProcess([], 0),
+                        subprocess.CompletedProcess([], 0,
+                            '{"format":{"duration":"10"},"streams":[{"codec_type":"video","height":%d}]}' % height),
+                    ]):
+                        self.assertEqual(download.main(), expected)
+
 
 if __name__ == "__main__":
     unittest.main()
