@@ -4,3 +4,5 @@ node_modules/
 downloads/
 *.zip
 __pycache__/
+search-results/
+

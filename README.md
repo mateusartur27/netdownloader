@@ -1,5 +1,16 @@
 # NetDownloader
 
+## Uso atual direto no GitHub
+
+O YouTube está desativado no download normal após os testes de confirmação de bot no GitHub e no Render. O Render foi somente um diagnóstico e não é necessário para este modo.
+
+1. Na aba **Actions**, abra **Buscar vídeos (Internet Archive)** e clique em **Run workflow**. Informe um termo. A busca é gratuita, sem chave, limitada ao catálogo de vídeos do Internet Archive; não é uma busca em toda a internet.
+2. Os resultados aparecem no resumo da execução. Copie uma URL.
+3. Abra **Baixar vídeo**, clique em **Run workflow** e cole a URL. Também aceita links HTTPS públicos de outros sites compatíveis com yt-dlp e MP4 direto, exceto YouTube.
+4. Após sucesso, baixe o artifact **video** no fim da execução. Expira em 1 dia.
+
+Não há garantia de baixar qualquer vídeo: login, DRM, bloqueios e limites do site podem impedir o download. O limite permanece em 1080p e 450 MB finais. Os provedores de PO Token e Chromium não são instalados no download normal; a comparação antiga permanece disponível para diagnóstico. A interface Cloudflare e a busca Brave descritas abaixo são opcionais e não precisam ser configuradas para este fluxo.
+
 Busca vídeos e baixa um vídeo público por solicitação. A interface e a API rodam no Cloudflare Workers. A busca no YouTube e os downloads usam `yt-dlp` no GitHub Actions; a busca em outros sites usa a Brave Video Search, se configurada. O resultado do download é um ZIP com o vídeo, disponível por 1 dia no artifact da execução.
 
 ## Preparar
@@ -81,6 +92,14 @@ O modo padrão utiliza `ubuntu-latest`. Em repositório público, os runners pad
 Como alternativa gratuita com um IP menos compartilhado, é possível registrar o runner em uma VM Oracle Cloud Always Free. A opção Ampere A1 oferece gratuitamente até 2 OCPUs e 12 GB de memória no limite documentado atual. Ela exige cadastro na Oracle, depende de capacidade na região escolhida e instâncias consideradas ociosas podem ser recuperadas pela Oracle. Configure essa VM com o mesmo rótulo `netdownloader`; nenhuma parte precisa executar no computador pessoal.
 
 ## Testes
+
+Na branch `codex/youtube-bgutils`, o workflow também instala o BgUtils 2.0.2 e compila seu gerador de PO Tokens com Node. A sequência é: clientes padrão, `mweb` com BgUtils e `mweb` com Chromium. O download só é aceito se o `ffprobe` encontrar duração positiva e uma faixa de vídeo; o limite de 1080p também se aplica ao formato alternativo.
+
+Em 8 de outubro de 2026, a execução [37807162916](https://github.com/mateusartur27/netdownloader/actions/runs/37807162916) gerou um PO Token de player pelo BgUtils, mas o YouTube respondeu novamente “Sign in to confirm you’re not a bot” para `waETo-ZWCRw`. Não foi produzido um artifact. A alternativa Chromium falhou ao iniciar nesse runner. Portanto, a integração do BgUtils está testada, mas não resolveu a restrição de acesso nesse teste.
+
+`python -m unittest discover -s scripts -p test_download.py` verifica a alternativa para `youtube.com` sem subdomínio e a rejeição de downloads sem arquivo ou sem faixa de vídeo.
+
+O segundo vídeo do YouTube (`jNQXAC9IVRw`, execução [37807388932](https://github.com/mateusartur27/netdownloader/actions/runs/37807388932)) apresentou a mesma exigência de login. O MP4 direto `https://www.w3schools.com/html/mov_bbb.mp4` foi baixado, validado e publicado como artifact na execução [37807903601](https://github.com/mateusartur27/netdownloader/actions/runs/37807903601). Esse controle revelou e permitiu corrigir a recusa de formatos sem resolução anunciada: eles agora podem ser baixados, e o `ffprobe` verifica o limite de 1080p após o download. Os quatro testes Python incluem a aceitação de 720p e a rejeição de 2160p.
 
 `npm test` verifica autenticação, validação de URLs e integração da API com respostas simuladas da Brave e do GitHub.
 

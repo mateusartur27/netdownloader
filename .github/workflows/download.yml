@@ -5,9 +5,17 @@ on:
   workflow_dispatch:
     inputs:
       url:
-        description: URL HTTPS pública do vídeo
+        description: URL HTTPS pública do vídeo (exceto YouTube)
         required: true
         type: string
+      compare:
+        description: Comparar motores de download (diagnóstico)
+        type: boolean
+        default: false
+      render_check:
+        description: Validar container do teste Render
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -18,6 +26,7 @@ concurrency:
 
 jobs:
   download:
+    if: ${{ !inputs.render_check }}
     runs-on: ${{ vars.YTDLP_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 30
     steps:
@@ -31,42 +40,76 @@ jobs:
       - name: Instalar yt-dlp e ffmpeg
         if: runner.environment == 'github-hosted'
         run: |
-          python -m pip install --upgrade 'yt-dlp[default]' 'yt-dlp-getpot-wpc==1.1.2'
+          python -m pip install --upgrade 'yt-dlp[default]'
           sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg xvfb
+          sudo apt-get install -y ffmpeg
       - name: Atualizar yt-dlp no runner próprio
         if: runner.environment == 'self-hosted'
-        run: python -m pip install --upgrade 'yt-dlp[default]' 'yt-dlp-getpot-wpc==1.1.2'
-      - name: Preparar provedor de PO Token no runner público
-        if: runner.environment == 'github-hosted'
-        run: python scripts/prepare_wpc.py
-      - name: Localizar navegador para o PO Token
-        if: runner.environment == 'github-hosted'
+        run: python -m pip install --upgrade 'yt-dlp[default]'
+      - name: Preparar BgUtils PO Token
+        if: inputs.compare
+        shell: bash
         run: |
-          browser_path="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
-          if [ -z "$browser_path" ]; then
-            echo "Chrome ou Chromium não foi encontrado no runner."
-            exit 1
-          fi
-          echo "YTDLP_BROWSER_PATH=$browser_path" >> "$GITHUB_ENV"
-      - name: Localizar navegador no runner próprio
-        if: runner.environment == 'self-hosted'
-        run: |
-          browser_path="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
-          if [ -z "$browser_path" ]; then
-            echo "Chrome ou Chromium não foi encontrado no runner."
-            exit 1
-          fi
-          echo "YTDLP_BROWSER_PATH=$browser_path" >> "$GITHUB_ENV"
+          python -m pip install 'bgutil-ytdlp-pot-provider==2.0.2'
+          provider_dir="$(mktemp -d "$RUNNER_TEMP/bgutil.XXXXXX")"
+          git clone --depth 1 --branch 2.0.2 https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git "$provider_dir"
+          cd "$provider_dir/server"
+          npm ci
+          npx tsc
+          echo "YTDLP_BGUTIL_HOME=$provider_dir/server" >> "$GITHUB_ENV"
       - name: Baixar um vídeo
+        if: ${{ !inputs.compare }}
         env:
           VIDEO_URL: ${{ inputs.url }}
           YT_DLP_PROXY: ${{ secrets.YT_DLP_PROXY }}
-        run: xvfb-run --auto-servernum python scripts/download.py
+        run: python scripts/download.py
       - name: Disponibilizar arquivo
+        if: ${{ !inputs.compare }}
         uses: actions/upload-artifact@v4
         with:
           name: video
           path: downloads/
           if-no-files-found: error
           retention-days: 1
+      - uses: actions/setup-dotnet@v4
+        if: inputs.compare
+        with:
+          dotnet-version: '10.0.x'
+      - name: Preparar motores de comparação
+        if: inputs.compare
+        run: |
+          python -m pip install --upgrade --pre 'yt-dlp[default]'
+          python -m pip install --upgrade pytubefix
+          dotnet build scripts/YoutubeProbe -c Release -o "$RUNNER_TEMP/youtube-probe"
+          python -m pip freeze
+      - name: Comparar downloads reais
+        if: inputs.compare
+        env:
+          VIDEO_URL: ${{ inputs.url }}
+          YOUTUBE_PROBE_DLL: ${{ runner.temp }}/youtube-probe/YoutubeProbe.dll
+          YTDLP_BROWSER_PATH: ''
+        run: python scripts/compare_downloaders.py
+      - name: Disponibilizar relatório de comparação
+        if: ${{ always() && inputs.compare }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: comparison-${{ github.run_id }}
+          path: downloads/comparison/
+          if-no-files-found: error
+          retention-days: 1
+  render-check:
+    if: inputs.render_check
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s deploy/render -p test_server.py
+      - name: Construir e verificar container
+        run: |
+          docker build -f deploy/render/Dockerfile -t netdownloader-probe .
+          docker run --rm netdownloader-probe deno --version
+          docker run --rm netdownloader-probe python -m yt_dlp --version
+          docker run --rm netdownloader-probe ffprobe -version

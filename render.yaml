@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: netdownloader-probe
+    runtime: docker
+    plan: free
+    dockerfilePath: ./deploy/render/Dockerfile
+    healthCheckPath: /health
+    autoDeployTrigger: off
+    envVars:
+      - key: APP_PASSWORD
+        sync: false
