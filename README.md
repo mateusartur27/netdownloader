@@ -1,5 +1,16 @@
 # NetDownloader
 
+## Uso atual direto no GitHub
+
+O YouTube está desativado no download normal após os testes de confirmação de bot no GitHub e no Render. O Render foi somente um diagnóstico e não é necessário para este modo.
+
+1. Na aba **Actions**, abra **Buscar vídeos (Internet Archive)** e clique em **Run workflow**. Informe um termo. A busca é gratuita, sem chave, limitada ao catálogo de vídeos do Internet Archive; não é uma busca em toda a internet.
+2. Os resultados aparecem no resumo da execução. Copie uma URL.
+3. Abra **Baixar vídeo**, clique em **Run workflow** e cole a URL. Também aceita links HTTPS públicos de outros sites compatíveis com yt-dlp e MP4 direto, exceto YouTube.
+4. Após sucesso, baixe o artifact **video** no fim da execução. Expira em 1 dia.
+
+Não há garantia de baixar qualquer vídeo: login, DRM, bloqueios e limites do site podem impedir o download. O limite permanece em 1080p e 450 MB finais. Os provedores de PO Token e Chromium não são instalados no download normal; a comparação antiga permanece disponível para diagnóstico. A interface Cloudflare e a busca Brave descritas abaixo são opcionais e não precisam ser configuradas para este fluxo.
+
 Busca vídeos e baixa um vídeo público por solicitação. A interface e a API rodam no Cloudflare Workers. A busca no YouTube e os downloads usam `yt-dlp` no GitHub Actions; a busca em outros sites usa a Brave Video Search, se configurada. O resultado do download é um ZIP com o vídeo, disponível por 1 dia no artifact da execução.
 
 ## Preparar

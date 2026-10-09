@@ -17,11 +17,18 @@ class DownloadTests(unittest.TestCase):
             with patch.dict(os.environ, {"YTDLP_BGUTIL_HOME": "/provider/server",
                                          "YTDLP_BROWSER_PATH": "", "YT_DLP_PROXY": ""}):
                 with patch.object(sys, "argv", ["download.py", "https://youtube.com/watch?v=example",
-                                                "--output-dir", directory]):
+                                                "--output-dir", directory, "--allow-youtube"]):
                     with patch.object(download.subprocess, "run", return_value=subprocess.CompletedProcess([], 1)) as run:
                         self.assertEqual(download.main(), 1)
                         self.assertEqual(run.call_count, 2)
                         self.assertIn("youtubepot-bgutilscript:server_home=/provider/server", run.call_args.args[0])
+
+    def test_youtube_is_rejected_before_download(self):
+        for host in ("youtube.com", "www.youtube.com", "youtu.be", "youtube-nocookie.com"):
+            with self.subTest(host=host), patch.object(sys, "argv", ["download.py", f"https://{host}/video"]):
+                with patch.object(download.subprocess, "run") as run:
+                    self.assertEqual(download.main(), 2)
+                    run.assert_not_called()
 
     def test_success_without_file_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:

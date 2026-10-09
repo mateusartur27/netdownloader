@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       url:
-        description: URL HTTPS pública do vídeo
+        description: URL HTTPS pública do vídeo (exceto YouTube)
         required: true
         type: string
       compare:
@@ -40,48 +40,29 @@ jobs:
       - name: Instalar yt-dlp e ffmpeg
         if: runner.environment == 'github-hosted'
         run: |
-          python -m pip install --upgrade 'yt-dlp[default]' 'yt-dlp-getpot-wpc==1.1.2' 'bgutil-ytdlp-pot-provider==2.0.2'
+          python -m pip install --upgrade 'yt-dlp[default]'
           sudo apt-get update -qq
-          sudo apt-get install -y ffmpeg xvfb
+          sudo apt-get install -y ffmpeg
       - name: Atualizar yt-dlp no runner próprio
         if: runner.environment == 'self-hosted'
-        run: python -m pip install --upgrade 'yt-dlp[default]' 'yt-dlp-getpot-wpc==1.1.2' 'bgutil-ytdlp-pot-provider==2.0.2'
+        run: python -m pip install --upgrade 'yt-dlp[default]'
       - name: Preparar BgUtils PO Token
+        if: inputs.compare
         shell: bash
         run: |
+          python -m pip install 'bgutil-ytdlp-pot-provider==2.0.2'
           provider_dir="$(mktemp -d "$RUNNER_TEMP/bgutil.XXXXXX")"
           git clone --depth 1 --branch 2.0.2 https://github.com/Brainicism/bgutil-ytdlp-pot-provider.git "$provider_dir"
           cd "$provider_dir/server"
           npm ci
           npx tsc
           echo "YTDLP_BGUTIL_HOME=$provider_dir/server" >> "$GITHUB_ENV"
-      - name: Preparar provedor de PO Token no runner público
-        if: runner.environment == 'github-hosted'
-        run: python scripts/prepare_wpc.py
-      - name: Localizar navegador para o PO Token
-        if: runner.environment == 'github-hosted'
-        run: |
-          browser_path="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
-          if [ -z "$browser_path" ]; then
-            echo "Chrome ou Chromium não foi encontrado no runner."
-            exit 1
-          fi
-          echo "YTDLP_BROWSER_PATH=$browser_path" >> "$GITHUB_ENV"
-      - name: Localizar navegador no runner próprio
-        if: runner.environment == 'self-hosted'
-        run: |
-          browser_path="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
-          if [ -z "$browser_path" ]; then
-            echo "Chrome ou Chromium não foi encontrado no runner."
-            exit 1
-          fi
-          echo "YTDLP_BROWSER_PATH=$browser_path" >> "$GITHUB_ENV"
       - name: Baixar um vídeo
         if: ${{ !inputs.compare }}
         env:
           VIDEO_URL: ${{ inputs.url }}
           YT_DLP_PROXY: ${{ secrets.YT_DLP_PROXY }}
-        run: xvfb-run --auto-servernum python scripts/download.py
+        run: python scripts/download.py
       - name: Disponibilizar arquivo
         if: ${{ !inputs.compare }}
         uses: actions/upload-artifact@v4

@@ -13,11 +13,18 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("url", nargs="?", default=os.environ.get("VIDEO_URL", ""))
     parser.add_argument("--output-dir", default="downloads")
+    parser.add_argument("--allow-youtube", action="store_true", help="Somente para diagnóstico")
     args = parser.parse_args()
     url = args.url
     parsed = urlsplit(url)
     if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
         print("URL HTTPS inválida.", file=sys.stderr)
+        return 2
+
+    hostname = parsed.hostname.rstrip(".").lower()
+    is_youtube = hostname in ("youtu.be", "youtube.com", "youtube-nocookie.com") or hostname.endswith((".youtube.com", ".youtube-nocookie.com"))
+    if is_youtube and not args.allow_youtube:
+        print("YouTube desativado: os testes na nuvem exigiram confirmação de bot. Use um link de outro site.", file=sys.stderr)
         return 2
 
     output = Path(args.output_dir)
@@ -43,8 +50,6 @@ def main() -> int:
     if proxy:
         base_command[3:3] = ["--proxy", proxy]
 
-    hostname = parsed.hostname.rstrip(".").lower()
-    is_youtube = hostname in ("youtu.be", "youtube.com") or hostname.endswith(".youtube.com")
     attempts = [("clientes padrão do YouTube", ["--no-plugin-dirs"])] \
         if is_youtube else [("extrator padrão", [])]
     browser_path = os.environ.get("YTDLP_BROWSER_PATH", "").strip()

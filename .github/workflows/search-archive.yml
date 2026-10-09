@@ -1,0 +1,33 @@
+name: Buscar vídeos (Internet Archive)
+run-name: Buscar vídeos no Internet Archive
+
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: Termo de busca (catálogo Internet Archive, sem YouTube)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Buscar vídeos públicos
+        env:
+          SEARCH_QUERY: ${{ inputs.query }}
+        run: python scripts/search_archive.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: search-results
+          path: search-results/
+          retention-days: 1
+          if-no-files-found: error

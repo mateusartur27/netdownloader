@@ -4,3 +4,4 @@ node_modules/
 downloads/
 *.zip
 __pycache__/
+`nsearch-results/
